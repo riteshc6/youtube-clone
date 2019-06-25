@@ -1,8 +1,8 @@
-"""new table
+"""new postgres database
 
-Revision ID: e83dab35bf12
+Revision ID: 4b8af0cedd36
 Revises: 
-Create Date: 2019-06-25 12:07:07.326943
+Create Date: 2019-06-25 18:42:43.059744
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e83dab35bf12'
+revision = '4b8af0cedd36'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -31,6 +31,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=80), nullable=True),
     sa.Column('description', sa.String(length=140), nullable=True),
+    sa.Column('path', sa.String(length=140), nullable=True),
     sa.Column('timestamp', sa.DateTime(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
