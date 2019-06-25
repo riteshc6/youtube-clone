@@ -52,18 +52,27 @@ Note : Both User and creator have same permissions to view and upload videos<br>
     * Any registered user can upload videos
 
 #### Database Schema Design
-    * User : { "user_id" : primary key, integer, autoincrement;
+    * User : { "id" : primary key, integer, autoincrement;
                 "Username" : String;
                 "email_id": string;
                 "password": string;
                 "videos" : db.relationship('Video', backref='user', lazy='dynamic')
+                "comments" : db.realationship('Comment', backref="user", lazy="dynamic")
         }
-    * Video : { "video_id" : primary key, integer, autoincrement;
+    * Video : { "id" : primary key, integer, autoincrement;
                  "title" : String;
                  "video_description" : String;
-                 "video_path": <directory/video_id>;
-                 "user_id" = integer, ForeignKey(user.id)
-        }    
+                 "video_path": <directory/video_id>;  # No need of path video will be saved using id value
+                 "timestamp": "timestamp"
+                 "user_id": integer, ForeignKey(user.id)
+                 "Comments": db.relationship("Comment", backref="video", lazy="dynamic")
+        }
+    * Comment : {"id" : primary key, integer, autoincrement;
+                "body": String;
+                "timestamp":timestamp;
+                "user_id" : integer, ForeignKey(user.id)
+                "video_id" : integer, ForeignKey(video.id)
+        }        
 
 
 

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div>
+        <video width="520" height="340" controls>
+
+                <source src="{{video.path}}" >
+    
+        </video><br>
+           title : {{video.title}}<br>
+           description : {{video.description}}<br>
+</div>
+{% endblock %}

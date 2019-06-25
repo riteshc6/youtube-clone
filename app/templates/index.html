@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+{% for video in videos  %}
+<a href={{ url_for('watch', video_id=video.id) }}>
+    <table class="table table-hover">
+        <tr>
+            <td width="70px">
+                <video width="320" height="240" controls>
+
+                    <source src="{{video.path}}">
+
+                </video>
+
+            </td>
+            <td>
+                title : {{video.title}}<br>
+                description : {{video.description}}<br>
+            </td>
+        </tr>
+    </table>
+</a>
+
+{% endfor %}
+{% endblock %}
