@@ -1,13 +1,26 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-<div>
-        <video width="520" height="340" controls>
 
-                <source src="{{video.path}}" >
-    
-        </video><br>
-           title : {{video.title}}<br>
-           description : {{video.description}}<br>
-</div>
+<div>
+    <video width="520" height="340" controls>
+
+            <source src="{{video.path}}" >
+
+    </video><br>
+    Uploaded By : <a href="{{url_for('profile', user_id=video.user_id)}}">{{video.user.username}}</a><br>
+    title : {{video.title}}<br>
+    description : {{video.description}}<br>
+    {% if not video.user_id == current_user.id %}
+    <p>Likes : {{ video.users.count() }}</p> 
+        {% if not current_user.is_liked(video) %}
+        <p><a href="{{ url_for('like', video_id=video.id) }}">Like</a></p>
+        {% else %}
+        <p><a href="{{ url_for('unlike', video_id=video.id) }}">Unlike</a></p>
+        {% endif %}
+    {% endif %} 
+    {% if current_user.id == video.user_id %}
+    <a href="{{url_for('delete', video_id=video.id)}}">Delete</a>
+    {% endif %}   
+    </div>
 {% endblock %}

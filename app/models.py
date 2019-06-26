@@ -6,6 +6,13 @@ from hashlib import md5
 from flask_login import current_user
 from app import login
 
+
+likes = db.Table('likes',
+                 db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+                 db.Column('video_id', db.Integer, db.ForeignKey('video.id'))
+                 )
+
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -22,6 +29,32 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    liked = db.relationship(
+        'Video', secondary=likes,
+        # primaryjoin=(likes.c.user_id == id),
+        # secondaryjoin=(likes.c.video_id == 'Video.id'),
+        backref=db.backref('users', lazy='dynamic'), lazy='dynamic')
+
+    def like(self, video):
+        if not self.is_liked(video):
+            self.liked.append(video)
+
+    def unlike(self, video):
+        if self.is_liked(video):
+            self.liked.remove(video)
+
+    def is_liked(self, video):
+        return self.liked.filter(
+            likes.c.video_id == video.id).count() > 0 
+
+    def liked_videos(self):
+        liked = Video.query.join(
+            likes, (likes.c.video_id == Video.id)).filter_by(
+                likes.c.user_id == self.id)
+        own = Video.query.filter_by(user_id=self.id)
+        return liked.union(own).order_by(Video.timestamp.desc())
+
 
 
 class Video(db.Model):
@@ -46,6 +79,7 @@ class Comment(db.Model):
 
     def __repr__(self):
         return '<Comment {}>'.format(self.body)
+
 
 @login.user_loader
 def load_user(id):

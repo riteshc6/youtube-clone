@@ -14,7 +14,6 @@ from flask import send_from_directory
 @login_required
 def index():
     videos = Video.query.all()
-
     return render_template('index.html', videos=videos)
 
 
@@ -62,7 +61,7 @@ def register():
 def upload():
     form = UploadForm()
     if form.validate_on_submit():
-        video = Video(title=form.title.data, description=form.description.data)
+        video = Video(title=form.title.data, description=form.description.data, user=current_user)
         db.session.add(video)
         db.session.commit()
         f = form.upload.data
@@ -84,3 +83,51 @@ def upload():
 def watch(video_id):
     video = Video.query.filter_by(id=video_id).first()
     return render_template('watch.html', video=video)
+
+
+@app.route('/like/<video_id>')
+@login_required
+def like(video_id):
+    video = Video.query.filter_by(id=video_id).first()
+    if video is None:
+        flash('Video {} not found'.format(video.title))
+        return redirect(url_for('index'))
+    current_user.like(video)
+    db.session.commit()
+    flash('{} added to your liked videos'.format(video.title))
+    return redirect(url_for('watch', video_id=video.id))
+
+@app.route('/unlike/<video_id>')
+@login_required
+def unlike(video_id):
+    video = Video.query.filter_by(id=video_id).first()
+    if video is None:
+        flash('Video {} not found'.format(video.title))
+        return redirect(url_for('index'))
+    current_user.unlike(video)
+    db.session.commit()
+    flash('{} removed from your liked videos'.format(video.title))
+    return redirect(url_for('watch', video_id=video.id))
+
+@app.route('/uploads')
+@login_required
+def uploads():
+    videos = Video.query.filter_by(user_id=current_user.id)
+    return render_template('uploads.html', videos=videos)
+
+
+@app.route('/delete/<video_id>')
+@login_required
+def delete(video_id):
+    video = Video.query.filter_by(id=video_id)
+    db.session.delete(video)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+@app.route('/profile/<user_id>')
+@login_required
+def profile(user_id):
+    videos = Video.query.filter_by(user_id=user_id)
+    user = User.query.filter_by(id=user_id).first()
+    print(user.id)
+    return render_template('profile.html', videos=videos, username=user.username)
