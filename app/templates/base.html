@@ -33,7 +33,8 @@
                         <li><a href={{ url_for('register') }}>Register</a></li>
                         {% else %}
                         <li><a href={{ url_for('profile',user_id=current_user.id) }}>Profile</a></li>
-                        <li><a href={{ url_for('uploads') }}>Uploads</a></li>
+                        <li><a href={{ url_for('liked') }}>Liked</a></li>
+                        <!-- <li><a href={{ url_for('uploads') }}>Uploads</a></li> -->
                         <li><a href={{ url_for('upload') }}>Upload</a></li>
                         <li><a href={{ url_for('logout') }}>Logout</a></li>
                         {% endif %}

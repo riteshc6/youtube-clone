@@ -17,12 +17,26 @@ def before_request():
     if current_user.is_authenticated:
         g.search_form = SearchForm()
 
+
 @app.route('/')
 @app.route('/index')
 @login_required
 def index():
-    videos = Video.query.all()
-    return render_template('index.html', videos=videos)
+    page = request.args.get('page', 1, type=int)
+    videos = Video.query.order_by(Video.timestamp.desc()).paginate(page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('index', page=videos.next_num)\
+        if videos.has_next else None
+    prev_url = url_for('index', page=videos.prev_num)\
+        if videos.has_prev else None
+    return render_template('index.html', videos=videos.items,
+                           next_url=next_url, prev_url=prev_url)
+
+
+@app.route('/liked')
+@login_required
+def liked():
+    videos = current_user.liked_videos()
+    return render_template('liked.html', videos=videos)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -36,7 +50,7 @@ def login():
             flash('Invalid username or password')
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
-                # next_page = request.args.get('next')
+        # next_page = request.args.get('next')
         # if not next_page or url_parse(next_page).netloc != '':
         #     next_page = url_for('index')
         # return redirect(next_page)
@@ -64,12 +78,14 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
 
+
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
     form = UploadForm()
     if form.validate_on_submit():
-        video = Video(title=form.title.data, description=form.description.data, user=current_user)
+        video = Video(title=form.title.data,
+                      description=form.description.data, user=current_user)
         db.session.add(video)
         db.session.commit()
         f = form.upload.data
@@ -104,6 +120,7 @@ def like(video_id):
     db.session.commit()
     flash('{} added to your liked videos'.format(video.title))
     return redirect(url_for('watch', video_id=video.id))
+
 
 @app.route('/unlike/<video_id>')
 @login_required
@@ -142,6 +159,7 @@ def profile(user_id):
     print(user.id)
     return render_template('profile.html', videos=videos, username=user.username)
 
+
 @app.route('/search')
 @login_required
 def search():
@@ -149,7 +167,7 @@ def search():
         return redirect(url_for('index'))
     page = request.args.get('page', 1, type=int)
     videos, total = Video.search(g.search_form.q.data, page,
-                               app.config['POSTS_PER_PAGE'])
+                                 app.config['POSTS_PER_PAGE'])
     next_url = url_for('search', q=g.search_form.q.data, page=page + 1)\
         if total > page * app.config['POSTS_PER_PAGE'] else None
     prev_url = url_for('search', q=g.search_form.q.data, page=page - 1)\

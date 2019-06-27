@@ -51,10 +51,8 @@ class User(UserMixin, db.Model):
 
     def liked_videos(self):
         liked = Video.query.join(
-            likes, (likes.c.video_id == Video.id)).filter_by(
-                likes.c.user_id == self.id)
-        own = Video.query.filter_by(user_id=self.id)
-        return liked.union(own).order_by(Video.timestamp.desc())
+            likes, (likes.c.video_id == Video.id)).filter(likes.c.user_id==self.id)
+        return liked.order_by(Video.timestamp.desc())
 
 
 class SearchableMixin(object):
