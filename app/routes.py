@@ -1,13 +1,21 @@
 import os
 from werkzeug.utils import secure_filename
-from flask import render_template, redirect, render_template, url_for, flash
+from flask import render_template, redirect, render_template, url_for, flash, request
 from flask_login import current_user, logout_user, login_user, login_required
 from app import app, db
 from app.forms import LoginForm, RegistrationForm, UploadForm
 from app.models import User, Video
 from config import basedir
 from flask import send_from_directory
+from flask import g
+from app.forms import SearchForm
+from flask_babel import _, get_locale
 
+
+@app.before_request
+def before_request():
+    if current_user.is_authenticated:
+        g.search_form = SearchForm()
 
 @app.route('/')
 @app.route('/index')
@@ -109,6 +117,7 @@ def unlike(video_id):
     flash('{} removed from your liked videos'.format(video.title))
     return redirect(url_for('watch', video_id=video.id))
 
+
 @app.route('/uploads')
 @login_required
 def uploads():
@@ -124,6 +133,7 @@ def delete(video_id):
     db.session.commit()
     return redirect(url_for('index'))
 
+
 @app.route('/profile/<user_id>')
 @login_required
 def profile(user_id):
@@ -131,3 +141,18 @@ def profile(user_id):
     user = User.query.filter_by(id=user_id).first()
     print(user.id)
     return render_template('profile.html', videos=videos, username=user.username)
+
+@app.route('/search')
+@login_required
+def search():
+    if not g.search_form.validate():
+        return redirect(url_for('index'))
+    page = request.args.get('page', 1, type=int)
+    videos, total = Video.search(g.search_form.q.data, page,
+                               app.config['POSTS_PER_PAGE'])
+    next_url = url_for('search', q=g.search_form.q.data, page=page + 1)\
+        if total > page * app.config['POSTS_PER_PAGE'] else None
+    prev_url = url_for('search', q=g.search_form.q.data, page=page - 1)\
+        if page > 1 else None
+    return render_template('search.html', title=_('search'), videos=videos,
+                           next_url=next_url, prev_url=prev_url)
