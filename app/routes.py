@@ -10,6 +10,12 @@ from flask import send_from_directory
 from flask import g
 from app.forms import SearchForm
 from flask_babel import _, get_locale
+import json
+from flask import send_from_directory, jsonify
+from app import celery
+from flask import Flask
+from config import Config
+from flask_sqlalchemy import SQLAlchemy
 
 
 @app.before_request
@@ -50,10 +56,6 @@ def login():
             flash('Invalid username or password')
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
-        # next_page = request.args.get('next')
-        # if not next_page or url_parse(next_page).netloc != '':
-        #     next_page = url_for('index')
-        # return redirect(next_page)
         return redirect(url_for('index'))
     return render_template('login.html', title='Sign In', form=form)
 
@@ -174,3 +176,77 @@ def search():
         if page > 1 else None
     return render_template('search.html', title=_('search'), videos=videos,
                            next_url=next_url, prev_url=prev_url)
+
+
+
+
+@celery.task(bind=True)
+def my_background_task(self, user_id):
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    db = SQLAlchemy(app)
+    with app.app_context():
+
+        videos = Video.query.filter_by(user_id=user_id)
+        content = []
+        total = len(list(videos))
+        i = 0
+        for video in videos:
+            import time
+            time.sleep(1)
+            i += 1
+            d = {}
+            d['id'] = video.id
+            d['title'] = video.title
+            d['timestamp'] = str(video.timestamp)
+            d['description'] = video.description
+            content.append(d)
+            self.update_state(state='PROGRESS', meta={'current': i, 'total': total,
+                                    'status': ''})
+                                   
+        with open('app/static/content_w.json', 'w') as f:
+            json.dump(content, f, indent=4, ensure_ascii=False)
+
+        return {'current': i, 'total': total, 'status': 'File Downloaded!', 'result': content}
+
+
+@app.route('/status/<job_id>')
+def status(job_id):
+    job = my_background_task.AsyncResult(job_id)
+    if job.state == 'PENDING':
+        response = {
+            'state': job.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif job.state != 'FAILURE':
+        response = {
+            'state': job.state,
+            'current': job.info.get('current', 0),
+            'total': job.info.get('total', 1),
+            'satus': job.info.get('status', '')
+        }
+        if 'result' in job.info:
+            response['result'] = job.info['result']
+    else:
+        response = {
+            'state': job.state,
+            'current': 1,
+            'total': 1,
+            'status': str(job.info),
+        }
+    return jsonify(response) 
+
+
+@app.route('/download', methods=['POST'])
+@login_required
+def download():
+    # download_content.delay()
+    job = my_background_task.delay(current_user.id)
+    return jsonify({}), 202, {'Location': url_for('status', job_id=job.id)}
+
+
+@app.route('/download_file')
+def download_file():
+    return send_from_directory(directory=os.path.join(basedir, "app/static/"), filename='content_w.json', as_attachment=True)
