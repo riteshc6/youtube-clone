@@ -2,7 +2,7 @@
 
 {% block app_content %}
 <h1>{{username}}</h1> 
-<button id="start-bg-job">Download Content</button><br><br>
+<button id="download-content">Download Content</button><br><br>
 <div id="progress"></div>
 <!-- <form action="/download" method="POST">
     <input type="submit" name=submit value="Download">
@@ -11,7 +11,7 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <script>
-    function start_long_task(){
+    function download_content(){
 
         div = $('<div class="Progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div><hr>')
         $('#progress').append(div);
@@ -45,8 +45,9 @@
                 if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
                     if ('result' in data) {
                         // show result
-                        $(status_div.childNodes[3]).text(data['state']);
-                        anchor = $('<a display="style:none" href="/download_file" id></a>')
+                        $(status_div.childNodes[2]).text("");
+                        $(status_div.childNodes[3]).text("Download Succesful");
+                        anchor = $('<a display="style:none" href="/download_file"></a>')
                         $('#progress').append(anchor);
                         $('#progress a')[0].click()
                     }
@@ -64,7 +65,7 @@
             });
         }
         $(function() {
-            $('#start-bg-job').click(start_long_task);
+            $('#download-content').click(download_content);
         });
 
 </script>

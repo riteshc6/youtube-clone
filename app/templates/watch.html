@@ -20,6 +20,7 @@
         {% endif %}
     {% endif %} 
     {% if current_user.id == video.user_id %}
+    <a href="{{url_for('edit_video', video_id=video.id)}}">Edit Video</a><br>
     <a href="{{url_for('delete', video_id=video.id)}}">Delete</a>
     {% endif %}   
     </div>

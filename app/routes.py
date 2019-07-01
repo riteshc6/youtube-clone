@@ -181,6 +181,7 @@ def search():
 
 
 @celery.task(bind=True)
+@login_required
 def my_background_task(self, user_id):
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -212,6 +213,7 @@ def my_background_task(self, user_id):
 
 
 @app.route('/status/<job_id>')
+@login_required
 def status(job_id):
     job = my_background_task.AsyncResult(job_id)
     if job.state == 'PENDING':
@@ -249,6 +251,28 @@ def download():
 
 
 @app.route('/download_file')
+@login_required
 def download_file():
     path = str(current_user.id) + '.json'
-    return send_from_directory(directory=os.path.join(basedir, "app/static/"), filename=path, as_attachment=True)
+    return send_from_directory(directory=os.path.join(basedir, "app/static/"), filename=path, as_attachment=True, cache_timeout=None, attachment_filename=current_user.username)
+
+
+@app.route('/edit_video/<video_id>', methods=['GET', 'POST'])
+@login_required
+def edit_video(video_id):
+    video = Video.query.filter_by(id=video_id).first()
+    form = UploadForm()
+    del form.upload
+    if current_user.id == video.user_id:
+        if form.validate_on_submit():
+            video.title = form.title.data if form.title.data else video.title
+            video.description = form.description.data
+            db.session.commit()
+            flash("Your Video has been Edited")
+            return redirect(url_for('watch', video_id=video.id))
+        else:
+            form.title.data = video.title
+            form.description.data = video.description
+            return render_template("edit_video.html", video=video, form=form)
+    else:
+        return "PERMISSION DENIED"       
