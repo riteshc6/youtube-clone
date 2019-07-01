@@ -3,24 +3,28 @@
         "id": 4,
         "title": "user check",
         "timestamp": "2019-06-26 06:41:30.288396",
-        "description": "test foreign key"
+        "description": "test foreign key",
+        "likes": 1
     },
     {
         "id": 5,
         "title": "test2",
         "timestamp": "2019-06-26 06:54:40.078170",
-        "description": "fresh videos"
+        "description": "fresh videos",
+        "likes": 1
     },
     {
         "id": 6,
         "title": "user 1",
         "timestamp": "2019-06-27 13:03:48.039696",
-        "description": "new"
+        "description": "new",
+        "likes": 0
     },
     {
         "id": 7,
         "title": "user 3",
         "timestamp": "2019-06-27 13:34:51.097284",
-        "description": "sadsd"
+        "description": "sadsd",
+        "likes": 0
     }
 ]

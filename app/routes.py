@@ -200,11 +200,12 @@ def my_background_task(self, user_id):
             d['title'] = video.title
             d['timestamp'] = str(video.timestamp)
             d['description'] = video.description
+            d['likes'] = video.users.count()
             content.append(d)
             self.update_state(state='PROGRESS', meta={'current': i, 'total': total,
                                     'status': ''})
                                    
-        with open('app/static/content_w.json', 'w') as f:
+        with open('app/static/'+str(user_id)+'.json', 'w') as f:
             json.dump(content, f, indent=4, ensure_ascii=False)
 
         return {'current': i, 'total': total, 'status': 'File Downloaded!', 'result': content}
@@ -249,4 +250,5 @@ def download():
 
 @app.route('/download_file')
 def download_file():
-    return send_from_directory(directory=os.path.join(basedir, "app/static/"), filename='content_w.json', as_attachment=True)
+    path = str(current_user.id) + '.json'
+    return send_from_directory(directory=os.path.join(basedir, "app/static/"), filename=path, as_attachment=True)
