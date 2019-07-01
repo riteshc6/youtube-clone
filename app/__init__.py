@@ -23,4 +23,4 @@ babel = Babel(app)
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
-from app import routes
+from app import routes, models, errors
