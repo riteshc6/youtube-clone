@@ -1,5 +1,4 @@
 from app import app
-from celery import Celery
 from app import app
 from app import celery
 from flask import Flask
@@ -7,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from app.models import User, Video
 from config import Config
 import json
-# from app.routes import before_request
+
 
 
 @celery.task(bind=True)
