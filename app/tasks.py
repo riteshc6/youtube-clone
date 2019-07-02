@@ -1,34 +1,42 @@
 from app import app
+from celery import Celery
+from app import app
 from app import celery
-from flask_login import current_user, logout_user, login_user, login_required
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from app.models import User, Video
+from config import Config
+import json
+# from app.routes import before_request
 
 
 @celery.task(bind=True)
-@login_required
-def my_background_task(self):
-    from app import app
-    from app.models import Video
+def my_background_task(self, user_id):
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    # celery.conf.update(app.config)
+    db = SQLAlchemy(app)
     with app.app_context():
 
-        # videos = Video.query.all()
-        # print(videos)
-        # # content = []
-        # for video in videos:
-        #     print(video)
-            # d = {}
-            # d['id'] = video.id
-            # d['title'] = video.title
-            # d['timestamp'] = str(video.timestamp)
-            # d['description'] = video.description
-            # content.append(d)
-        # print(content)
-        import time
-        total = 100
-        message = "test"
-        for i in range(50):
+        videos = Video.query.filter_by(user_id=user_id)
+        content = []
+        total = len(list(videos))
+        i = 0
+        for video in videos:
+            import time
             time.sleep(1)
-            self.update_state(state='PROGRESS',
-                            meta={'current': i, 'total': total,
-                                    'status': message})
-            print(i)
-        return {'current': 100, 'total': 100, 'status': 'Task Completed', 'result': 15}
+            i += 1
+            d = {}
+            d['id'] = video.id
+            d['title'] = video.title
+            d['timestamp'] = str(video.timestamp)
+            d['description'] = video.description
+            d['likes'] = video.users.count()
+            content.append(d)
+            self.update_state(state='PROGRESS', meta={'current': i, 'total': total,
+                                                      'status': ''})
+
+        with open('app/static/'+str(user_id)+'.json', 'w') as f:
+            json.dump(content, f, indent=4, ensure_ascii=False)
+
+        return {'current': i, 'total': total, 'status': 'File Downloaded!', 'result': content}

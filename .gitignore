@@ -108,7 +108,7 @@ ENV/
 env.bak/
 venv.bak/
 migrations/
-
+.DS_Store
 # Spyder project settings
 .spyderproject
 .spyproject
