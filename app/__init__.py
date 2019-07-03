@@ -9,7 +9,6 @@ import certifi
 from flask_babel import Babel, lazy_gettext as _l
 from celery import Celery
 
-
 app = Flask(__name__)
 app.config.from_object(Config)
 db = SQLAlchemy(app)
