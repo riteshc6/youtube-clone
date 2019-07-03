@@ -21,6 +21,6 @@ elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']], use_ssl=True, c
             if app.config['ELASTICSEARCH_URL'] else None
 babel = Babel(app)
 celery = Celery(app.name, backend=app.config['CELERY_BROKER_URL'], broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(CELERY_IMPORTS='app.tasks')
+# celery.conf.update(CELERY_IMPORTS='app.tasks')
 
 from app import routes, models, errors, tasks

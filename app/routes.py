@@ -15,34 +15,10 @@ from flask import send_from_directory, jsonify
 from flask import Flask
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
-from app.tasks import my_background_task
-
-@app.before_request
-def before_request():
-    if current_user.is_authenticated:
-        g.search_form = SearchForm()
+from app.tasks import download_content
 
 
-@app.route('/')
-@app.route('/index')
-@login_required
-def index():
-    page = request.args.get('page', 1, type=int)
-    videos = Video.query.order_by(Video.timestamp.desc()).paginate(page, app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('index', page=videos.next_num)\
-        if videos.has_next else None
-    prev_url = url_for('index', page=videos.prev_num)\
-        if videos.has_prev else None
-    return render_template('index.html', videos=videos.items,
-                           next_url=next_url, prev_url=prev_url)
-
-
-@app.route('/liked')
-@login_required
-def liked():
-    videos = current_user.liked_videos()
-    return render_template('liked.html', videos=videos)
-
+# ---------------- Authentication Functions --------------------------- #
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -80,7 +56,30 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-@app.route('/upload', methods=['GET', 'POST'])
+# ----- /index, /upload, /delete, /watch, /before_request, /edit_video ------ #
+
+@app.before_request
+def before_request():
+    if current_user.is_authenticated:
+        g.search_form = SearchForm()
+
+
+@app.route('/')
+@app.route('/index')
+@login_required
+def index():
+    page = request.args.get('page', 1, type=int)
+    videos = Video.query.order_by(Video.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('index', page=videos.next_num)\
+        if videos.has_next else None
+    prev_url = url_for('index', page=videos.prev_num)\
+        if videos.has_prev else None
+    return render_template('index.html', videos=videos.items,
+                           next_url=next_url, prev_url=prev_url)
+
+
+@app.route('/videos/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
     form = UploadForm()
@@ -103,12 +102,44 @@ def upload():
     return render_template('upload.html', title='Upload', form=form)
 
 
-@app.route('/watch/<video_id>')
+@app.route('/edit_video/<video_id>', methods=['GET', 'POST'])
+@login_required
+def edit_video(video_id):
+    video = Video.query.filter_by(id=video_id).first()
+    form = UploadForm()
+    del form.upload
+    if current_user.id == video.user_id:
+        if form.validate_on_submit():
+            video.title = form.title.data if form.title.data else video.title
+            video.description = form.description.data
+            db.session.commit()
+            flash("Your Video has been Edited")
+            return redirect(url_for('watch', video_id=video.id))
+        else:
+            form.title.data = video.title
+            form.description.data = video.description
+            return render_template("edit_video.html", video=video, form=form)
+    else:
+        return "PERMISSION DENIED"
+
+
+@app.route('/delete/<video_id>')
+@login_required
+def delete(video_id):
+    video = Video.query.filter_by(id=video_id).first()
+    db.session.delete(video)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+
+@app.route('/videos/<video_id>')
 @login_required
 def watch(video_id):
     video = Video.query.filter_by(id=video_id).first()
     return render_template('watch.html', video=video)
 
+
+# ------------------- /like, /unlike, /liked videos ------------------------- #
 
 @app.route('/like/<video_id>')
 @login_required
@@ -136,22 +167,14 @@ def unlike(video_id):
     return redirect(url_for('watch', video_id=video.id))
 
 
-@app.route('/uploads')
+@app.route('/videos/liked')
 @login_required
-def uploads():
-    videos = Video.query.filter_by(user_id=current_user.id)
-    return render_template('uploads.html', videos=videos)
+def liked():
+    videos = current_user.liked_videos()
+    return render_template('liked.html', videos=videos)
 
 
-@app.route('/delete/<video_id>')
-@login_required
-def delete(video_id):
-    video = Video.query.filter_by(id=video_id).first()
-    db.session.delete(video)
-    db.session.commit()
-    return redirect(url_for('index'))
-
-
+# ------------------------ /profile -------------------------------- #
 @app.route('/profile/<user_id>')
 @login_required
 def profile(user_id):
@@ -161,6 +184,7 @@ def profile(user_id):
     return render_template('profile.html', videos=videos, username=user.username)
 
 
+# -------------------------- Elastic Search ------------------------ #
 @app.route('/search')
 @login_required
 def search():
@@ -177,11 +201,19 @@ def search():
                            next_url=next_url, prev_url=prev_url)
 
 
+# -------------------------- Download File ----------------------------- #
+
+@app.route('/download', methods=['POST'])
+@login_required
+def download():
+    job = download_content.delay(current_user.id)
+    return jsonify({}), 202, {'Location': url_for('status', job_id=job.id)}
+
 
 @app.route('/status/<job_id>')
 @login_required
 def status(job_id):
-    job = my_background_task.AsyncResult(job_id)
+    job = download_content.AsyncResult(job_id)
     if job.state == 'PENDING':
         response = {
             'state': job.state,
@@ -205,15 +237,7 @@ def status(job_id):
             'total': 1,
             'status': str(job.info),
         }
-    return jsonify(response) 
-
-
-@app.route('/download', methods=['POST'])
-@login_required
-def download():
-    # download_content.delay()
-    job = my_background_task.delay(current_user.id)
-    return jsonify({}), 202, {'Location': url_for('status', job_id=job.id)}
+    return jsonify(response)
 
 
 @app.route('/download_file')
@@ -222,24 +246,3 @@ def download_file():
     path = str(current_user.id) + '.json'
     filename = current_user.username + ".json"
     return send_from_directory(directory=os.path.join(basedir, "app/static/"), filename=path, as_attachment=True, cache_timeout=None, attachment_filename=filename)
-
-
-@app.route('/edit_video/<video_id>', methods=['GET', 'POST'])
-@login_required
-def edit_video(video_id):
-    video = Video.query.filter_by(id=video_id).first()
-    form = UploadForm()
-    del form.upload
-    if current_user.id == video.user_id:
-        if form.validate_on_submit():
-            video.title = form.title.data if form.title.data else video.title
-            video.description = form.description.data
-            db.session.commit()
-            flash("Your Video has been Edited")
-            return redirect(url_for('watch', video_id=video.id))
-        else:
-            form.title.data = video.title
-            form.description.data = video.description
-            return render_template("edit_video.html", video=video, form=form)
-    else:
-        return "PERMISSION DENIED"       

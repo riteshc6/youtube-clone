@@ -10,10 +10,11 @@ import json
 
 
 @celery.task(bind=True)
-def my_background_task(self, user_id):
+def download_content(self, user_id):
     app = Flask(__name__)
     app.config.from_object(Config)
-    # celery.conf.update(app.config)
+    # celery.conf.update(DATABASE_URL='postgresql://ritesh:ritesh@127.0.0.1:5432/youtube')
+    
     db = SQLAlchemy(app)
     with app.app_context():
 
@@ -22,16 +23,14 @@ def my_background_task(self, user_id):
         total = len(list(videos))
         i = 0
         for video in videos:
-            import time
-            time.sleep(1)
             i += 1
-            d = {}
-            d['id'] = video.id
-            d['title'] = video.title
-            d['timestamp'] = str(video.timestamp)
-            d['description'] = video.description
-            d['likes'] = video.users.count()
-            content.append(d)
+            video_details = {}
+            video_details['id'] = video.id
+            video_details['title'] = video.title
+            video_details['timestamp'] = str(video.timestamp)
+            video_details['description'] = video.description
+            video_details['likes'] = video.users.count()
+            content.append(video_details)
             self.update_state(state='PROGRESS', meta={'current': i, 'total': total,
                                                       'status': ''})
 
