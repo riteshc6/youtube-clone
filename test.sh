@@ -10,19 +10,16 @@ pip3 install -r requirements.txt
 sudo apt install redis
 sudo apt install nginx
 sudo apt install gunicorn
-flask db migrate
+sudo apt-get install python-psycopg2
 flask db init
 flask db migrate
-sudo apt-get install python-psycopg2
 flask db upgrade
 sudo bash -c 'cat > \.env <<EOF
-DATABASE_URL='postgresql://ritesh:ritesh@127.0.0.1:5432/youtube'
+DATABASE_URL='postgresql://postgres:postgres@youtube.clejaeyrxoaa.ap-south-1.rds.amazonaws.com'
 ELASTICSEARCH_URL='https://f069c30c3cb14cdea0d99bff5edb320f.us-west1.gcp.cloud.es.io:9243/'
 ELASTIC_USER = 'elastic'
 ELASTIC_PASSWORD = 'jxhGL9smUvkxFLEWr4ErzjaR'
-EOF
-'
-gunicorn youtube:app -b localhost:8000 &
+EOF'
 sudo bash -c 'cat >  /etc/nginx/conf.d/virtual.conf << EOF
 server {
     listen       80;
@@ -33,8 +30,9 @@ server {
     }
 }
 client_max_body_size 20M;
-EOF
-'
+EOF'
+sudo nginx -t
+sudo service nginx restart
 sudo bash -c 'cat > /etc/systemd/system/testing.service
 [Unit]
 Description=Youtube web application
@@ -50,12 +48,10 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
-EOF
-'
-sudo nginx -t
-sudo service nginx restart
+EOF'
 sudo systemctl daemon-reload
-sudo systemctl start youtube
+sudo systemctl start testing
+
 sudo bash -c 'cat > /etc/systemd/system/worker.service << EOF
 [Unit]
 Description=Youtube task worker
@@ -71,7 +67,6 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
-EOF
-'
+EOF'
 sudo systemctl daemon-reload
-sudo systemctl status celery
+sudo systemctl start worker
