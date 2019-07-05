@@ -28,8 +28,7 @@ server {
 client_max_body_size 20M;
 EOF'
 sudo service nginx restart
-echo "hsahsasjdhjksahdasdhkjs------------------------------"
-sudo bash -c 'cat > /etc/systemd/system/testing.service <<EOF
+sudo bash -c 'cat > /etc/systemd/system/youtube.service <<EOF
 [Unit]
 Description=Youtube web application
 After=network.target
@@ -46,9 +45,8 @@ Restart=always
 WantedBy=multi-user.target
 EOF'
 sudo systemctl daemon-reload
-sudo systemctl start testing
-echo "sadsadkjas ------- dsjflkjdflsdf-     -----------------"
-sudo bash -c 'cat > /etc/systemd/system/worker.service << EOF
+sudo systemctl start youtube
+sudo bash -c 'cat > /etc/systemd/system/celery.service << EOF
 [Unit]
 Description=Youtube task worker
 After=network.target
@@ -65,4 +63,4 @@ Restart=always
 WantedBy=multi-user.target
 EOF'
 sudo systemctl daemon-reload
-sudo systemctl start worker
+sudo systemctl start celery
