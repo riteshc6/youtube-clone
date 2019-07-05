@@ -7,7 +7,7 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 sudo apt install redis
 sudo apt install nginx
-sudo apt install gunicorn
+pip install gunicorn
 sudo apt-get install python-psycopg2
 sudo bash -c 'cat > \.env <<EOF
 DATABASE_URL='postgresql://postgres:postgres@youtube.clejaeyrxoaa.ap-south-1.rds.amazonaws.com'
