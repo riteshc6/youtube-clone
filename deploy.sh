@@ -1,7 +1,6 @@
 #! /bin/bash
 sudo apt update
 sudo apt install python3-pip
-sudo apt install postgresql
 sudo apt install nano
 sudo apt-get install python3-venv
 python3 -m venv venv
@@ -11,16 +10,13 @@ sudo apt install redis
 sudo apt install nginx
 sudo apt install gunicorn
 sudo apt-get install python-psycopg2
-flask db init
-flask db migrate
-flask db upgrade
 sudo bash -c 'cat > \.env <<EOF
 DATABASE_URL='postgresql://postgres:postgres@youtube.clejaeyrxoaa.ap-south-1.rds.amazonaws.com'
 ELASTICSEARCH_URL='https://f069c30c3cb14cdea0d99bff5edb320f.us-west1.gcp.cloud.es.io:9243/'
 ELASTIC_USER = 'elastic'
 ELASTIC_PASSWORD = 'jxhGL9smUvkxFLEWr4ErzjaR'
 EOF'
-sudo bash -c 'cat >  /etc/nginx/conf.d/virtual.conf << EOF
+sudo bash -c 'cat >  /etc/nginx/conf.d/virtual.conf <<EOF
 server {
     listen       80;
     server_name  13.233.31.67;
@@ -31,9 +27,9 @@ server {
 }
 client_max_body_size 20M;
 EOF'
-sudo nginx -t
 sudo service nginx restart
-sudo bash -c 'cat > /etc/systemd/system/testing.service
+echo "hsahsasjdhjksahdasdhkjs------------------------------"
+sudo bash -c 'cat > /etc/systemd/system/testing.service <<EOF
 [Unit]
 Description=Youtube web application
 After=network.target
@@ -51,7 +47,7 @@ WantedBy=multi-user.target
 EOF'
 sudo systemctl daemon-reload
 sudo systemctl start testing
-
+echo "sadsadkjas ------- dsjflkjdflsdf-     -----------------"
 sudo bash -c 'cat > /etc/systemd/system/worker.service << EOF
 [Unit]
 Description=Youtube task worker
