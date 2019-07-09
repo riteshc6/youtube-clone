@@ -16,6 +16,7 @@ from flask import Flask
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from app.tasks import download_content
+from flask import abort
 
 
 # ---------------- Authentication Functions --------------------------- #
@@ -105,7 +106,7 @@ def upload():
 @app.route('/edit_video/<video_id>', methods=['GET', 'POST'])
 @login_required
 def edit_video(video_id):
-    video = Video.query.filter_by(id=video_id).first()
+    video = Video.query.filter_by(id=video_id).first_or_404()
     form = UploadForm()
     del form.upload
     if current_user.id == video.user_id:
@@ -120,13 +121,13 @@ def edit_video(video_id):
             form.description.data = video.description
             return render_template("edit_video.html", video=video, form=form)
     else:
-        return "PERMISSION DENIED"
+        return abort(403)
 
 
 @app.route('/delete/<video_id>')
 @login_required
 def delete(video_id):
-    video = Video.query.filter_by(id=video_id).first()
+    video = Video.query.filter_by(id=video_id).first_or_404()
     db.session.delete(video)
     db.session.commit()
     return redirect(url_for('index'))
@@ -141,10 +142,10 @@ def watch(video_id):
 
 # ------------------- /like, /unlike, /liked videos ------------------------- #
 
-@app.route('/like/<video_id>')
+@app.route('/videos/<video_id>/like')
 @login_required
 def like(video_id):
-    video = Video.query.filter_by(id=video_id).first()
+    video = Video.query.filter_by(id=video_id).first_or_404()
     if video is None:
         flash('Video {} not found'.format(video.title))
         return redirect(url_for('index'))
@@ -154,10 +155,10 @@ def like(video_id):
     return redirect(url_for('watch', video_id=video.id))
 
 
-@app.route('/unlike/<video_id>')
+@app.route('/videos/<video_id>/unlike')
 @login_required
 def unlike(video_id):
-    video = Video.query.filter_by(id=video_id).first()
+    video = Video.query.filter_by(id=video_id).first_or_404()
     if video is None:
         flash('Video {} not found'.format(video.title))
         return redirect(url_for('index'))
@@ -179,7 +180,7 @@ def liked():
 @login_required
 def profile(user_id):
     videos = Video.query.filter_by(user_id=user_id)
-    user = User.query.filter_by(id=user_id).first()
+    user = User.query.filter_by(id=user_id).first_or_404()
     print(user.id)
     return render_template('profile.html', videos=videos, username=user.username)
 
@@ -207,6 +208,7 @@ def search():
 @login_required
 def download():
     job = download_content.delay(current_user.id)
+    print(job, "in download.............")
     return jsonify({}), 202, {'Location': url_for('status', job_id=job.id)}
 
 
@@ -214,6 +216,7 @@ def download():
 @login_required
 def status(job_id):
     job = download_content.AsyncResult(job_id)
+    print(job.info)
     if job.state == 'PENDING':
         response = {
             'state': job.state,
@@ -230,13 +233,7 @@ def status(job_id):
         }
         if 'result' in job.info:
             response['result'] = job.info['result']
-    else:
-        response = {
-            'state': job.state,
-            'current': 1,
-            'total': 1,
-            'status': str(job.info),
-        }
+
     return jsonify(response)
 
 

@@ -1,23 +1,13 @@
 from app import app
-from app import app
 from app import celery
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from app.models import User, Video
-from config import Config
 import json
-
+import time
 
 
 @celery.task(bind=True)
 def download_content(self, user_id):
-    app = Flask(__name__)
-    app.config.from_object(Config)
-    # celery.conf.update(DATABASE_URL='postgresql://ritesh:ritesh@127.0.0.1:5432/youtube')
-    
-    db = SQLAlchemy(app)
     with app.app_context():
-
         videos = Video.query.filter_by(user_id=user_id)
         content = []
         total = len(list(videos))
